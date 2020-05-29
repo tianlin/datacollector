@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.streamsets.pipeline.lib.el;
 
 
@@ -21,7 +22,6 @@ import com.streamsets.pipeline.api.ElParam;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -29,15 +29,15 @@ import java.util.stream.Collectors;
 public class CollectionEL {
 
   @ElFunction(
-    prefix = "collection",
-    name = "contains",
-    description = "Returns true if given collection contains given item."
+      prefix = "collection",
+      name = "contains",
+      description = "Returns true if given collection contains given item."
   )
   public static boolean contains(
       @ElParam("collection") Collection collection,
       @ElParam("item") Object item
   ) {
-    if(collection == null) {
+    if (collection == null) {
       return false;
     }
 
@@ -45,64 +45,59 @@ public class CollectionEL {
   }
 
   @ElFunction(
-    prefix = "collection",
-    name = "filterByRegExp",
-    description = "Filter given collection by regular expression (will cast each object to string for the mapping)."
+      prefix = "collection",
+      name = "filterByRegExp",
+      description = "Filter given collection by regular expression (will cast each object to string for the mapping)."
   )
   public static List filterByRegExp(
       @ElParam("collection") Collection collection,
       @ElParam("regexp") String regexp
   ) {
-    if(collection == null || regexp == null) {
+    if (collection == null || regexp == null) {
       return Collections.emptyList();
     }
     Pattern pattern = Pattern.compile(regexp);
 
-    return (List)collection.stream()
+    return (List) collection.stream()
         .filter(i -> pattern.matcher(i.toString()).find())
         .collect(Collectors.toList());
   }
 
   @ElFunction(
-    prefix = "collection",
-    name = "size",
-    description = "Return size of the collection."
+      prefix = "collection",
+      name = "size",
+      description = "Return size of the collection."
   )
   public static int size(
       @ElParam("collection") Collection collection
   ) {
-    if(collection == null) {
+    if (collection == null) {
       return 0;
     }
 
     return collection.size();
+
   }
 
   @ElFunction(
-    prefix = "collection",
-    name = "get",
-    description = "Return given index from the collection."
+      prefix = "collection",
+      name = "get",
+      description = "Return given index from the collection."
   )
   public static Object get(
       @ElParam("collection") Collection collection,
       @ElParam("index") int index
   ) {
-    if(collection == null) {
+    if (collection == null) {
       return null;
     }
 
-    Iterator it = collection.iterator();
-    Object last = null;
-
-    while(index >= 0 && it.hasNext()) {
-      last = it.next();
-      index--;
-    }
-
-    if(index == -1) {
-      return last;
-    } else {
+    int size = collection.size();
+    index = index >= 0 ? index : size + index;
+    if (index < 0 || index > size - 1) {
       return null;
     }
+
+    return collection.stream().skip(index).findFirst().get();
   }
 }

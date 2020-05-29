@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.streamsets.datacollector.record;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -55,7 +56,7 @@ public class RecordImpl implements Record, Cloneable {
     Preconditions.checkNotNull(stageCreator, "stage cannot be null");
     Preconditions.checkNotNull(recordSourceId, "source cannot be null");
     Preconditions.checkArgument((raw != null && rawMime != null) || (raw == null && rawMime == null),
-                                "raw and rawMime have both to be null or not null");
+        "raw and rawMime have both to be null or not null");
     header = new HeaderImpl();
     if (raw != null) {
       header.setRaw(raw);
@@ -134,7 +135,7 @@ public class RecordImpl implements Record, Cloneable {
     }
 
     public FieldWithPath(String singleQuoteEscapedPath, String doubleQuoteEscapedPath, Field.Type type, Object value,
-        Map<String, String> attributes) {
+                         Map<String, String> attributes) {
       this.sqPath = singleQuoteEscapedPath;
       this.dqPath = doubleQuoteEscapedPath;
       this.type = type;
@@ -148,6 +149,7 @@ public class RecordImpl implements Record, Cloneable {
 
     /**
      * Returns single quote escaped path
+     *
      * @return String
      */
     public String getSQPath() {
@@ -156,6 +158,7 @@ public class RecordImpl implements Record, Cloneable {
 
     /**
      * Returns double quote escaped path
+     *
      * @return String
      */
     public String getDQPath() {
@@ -166,7 +169,7 @@ public class RecordImpl implements Record, Cloneable {
       return type.toString();
     }
 
-    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
     public Map<String, String> getAttributes() {
       if (attributes == null) {
         return null;
@@ -291,7 +294,7 @@ public class RecordImpl implements Record, Cloneable {
     List<Field> fields = new ArrayList<>(elements.size());
     if (value != null) {
       Field current = value;
-      for (int i = 0; current != null &&  i < elements.size(); i++) {
+      for (int i = 0; current != null && i < elements.size(); i++) {
         Field next = null;
         PathElement element = elements.get(i);
         switch (element.getType()) {
@@ -317,7 +320,12 @@ public class RecordImpl implements Record, Cloneable {
               int index = element.getIndex();
               List<Field> list = current.getValueAsList();
               if (list != null) {
-                if (list.size() > index) {
+                // use negative index to fetch last n element
+                if (index < 0) {
+                  index = list.size() + index;
+                }
+
+                if (index < list.size()) {
                   Field field = list.get(index);
                   fields.add(field);
                   next = field;
@@ -369,7 +377,13 @@ public class RecordImpl implements Record, Cloneable {
             deleted = fields.get(fieldPos - 1).getValueAsMap().remove(element.getName());
             break;
           case LIST:
-            deleted = fields.get(fieldPos - 1).getValueAsList().remove(element.getIndex());
+            int index = element.getIndex();
+            int listSize = fields.get(fieldPos - 1).getValueAsList().size();
+            if (index < 0) {
+              index = listSize + index;
+            }
+
+            deleted = fields.get(fieldPos - 1).getValueAsList().remove(index);
             break;
           case FIELD_EXPRESSION:
           default:
@@ -490,7 +504,7 @@ public class RecordImpl implements Record, Cloneable {
   }
 
   public static String escapeName(String name, boolean includeSingleQuotes) {
-    if(includeSingleQuotes) {
+    if (includeSingleQuotes) {
       return EscapeUtil.singleQuoteEscape(name);
     } else {
       StringBuilder sb = new StringBuilder(name.length() * 2);
@@ -591,7 +605,12 @@ public class RecordImpl implements Record, Cloneable {
         case LIST:
           int elementIndex = elements.get(fieldPos).getIndex();
           Field parentField = fields.get(fieldPos - 1);
-          if(elementIndex == parentField.getValueAsList().size()){
+          int listSize = parentField.getValueAsList().size();
+          if (elementIndex < 0) {
+            elementIndex = listSize + elementIndex;
+          }
+
+          if (elementIndex == listSize) {
             //add at end
             parentField.getValueAsList().add(newField);
           } else {
@@ -627,7 +646,7 @@ public class RecordImpl implements Record, Cloneable {
     switch (currentField.getType()) {
       case MAP:
       case LIST_MAP:
-        for(Map.Entry<String, Field> entry : currentField.getValueAsMap().entrySet()) {
+        for (Map.Entry<String, Field> entry : currentField.getValueAsMap().entrySet()) {
           visitFieldsInternal(
               recordField,
               visitor,
@@ -640,7 +659,7 @@ public class RecordImpl implements Record, Cloneable {
         break;
       case LIST:
         int index = 0;
-        for(Field childField : currentField.getValueAsList()) {
+        for (Field childField : currentField.getValueAsList()) {
           visitFieldsInternal(recordField, visitor, name, path + "[" + index + "]", childField, currentField);
           index++;
         }

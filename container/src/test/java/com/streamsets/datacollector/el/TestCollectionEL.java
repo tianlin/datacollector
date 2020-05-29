@@ -18,9 +18,14 @@ package com.streamsets.datacollector.el;
 import com.google.common.collect.ImmutableList;
 import com.streamsets.datacollector.definition.ConcreteELDefinitionExtractor;
 import com.streamsets.datacollector.definition.ELDefinitionExtractor;
+import com.streamsets.datacollector.record.RecordImpl;
+import com.streamsets.pipeline.api.Field;
+import com.streamsets.pipeline.api.Record;
 import com.streamsets.pipeline.lib.el.CollectionEL;
+import com.streamsets.pipeline.lib.el.RecordEL;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -71,13 +76,26 @@ public class TestCollectionEL {
 
   @Test
   public void testGet() throws Exception {
-    ELEvaluator eval = new ELEvaluator("testGet", elDefinitionExtractor, CollectionEL.class);
+    ELEvaluator eval = new ELEvaluator("testGet", elDefinitionExtractor, CollectionEL.class, RecordEL.class);
     ELVariables variables = new ELVariables();
 
     // Positive cases
     variables.addVariable("list", ImmutableList.of("a", "b"));
     assertEquals("a", eval.eval(variables,"${collection:get(list, 0)}", String.class));
     assertEquals("b", eval.eval(variables,"${collection:get(list, 1)}", String.class));
+    assertEquals("b", eval.eval(variables,"${collection:get(list, -1)}", String.class));
     assertEquals("", eval.eval(variables,"${collection:get(list, 2)}", String.class));
+
+
+    List<Field> fields = new ArrayList<>(5);
+    for (int i = 0; i < 5; i++) {
+      Field field = Field.create(i);
+      fields.add(field);
+    }
+
+    Record record = new RecordImpl(null, Field.create(fields));
+    RecordEL.setRecordInContext(variables, record);
+    assertEquals(Field.create(0), eval.eval(variables,"${collection:get(record:value('/'), 0)}", Field.class));
+    assertEquals(Field.create(4), eval.eval(variables,"${collection:get(record:value('/'), -1)}", Field.class));
   }
 }

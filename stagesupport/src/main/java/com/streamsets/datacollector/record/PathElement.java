@@ -18,11 +18,14 @@ package com.streamsets.datacollector.record;
 import com.streamsets.datacollector.util.EscapeUtil;
 import com.streamsets.pipeline.api.impl.Utils;
 import com.streamsets.pipeline.lib.util.FieldPathExpressionUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class PathElement {
+  private static final Logger log = LoggerFactory.getLogger(PathElement.class);
 
   public enum Type {
     ROOT,
@@ -207,6 +210,7 @@ public class PathElement {
             }
           } else if (squareBracketsDepth > 0) {
             switch (ch) {
+              case '-':
               case '0':
               case '1':
               case '2':
@@ -234,7 +238,7 @@ public class PathElement {
                     final boolean singleCharWildcard = WILDCARD_SINGLE_CHAR.equals(bracketedString);
                     final boolean wildcardAnyLength = WILDCARD_ANY_LENGTH.equals(bracketedString);
                     final boolean wildcardIndex = singleCharWildcard || wildcardAnyLength;
-                    if (wildcardIndex || bracketedString.matches("[0-9]+")) {
+                    if (wildcardIndex || bracketedString.matches("-?[0-9]+")) {
                       // wildcard or numeric index
                       try {
                         int index = singleCharWildcard ? WILDCARD_INDEX_SINGLE_CHAR : WILDCARD_INDEX_ANY_LENGTH;
